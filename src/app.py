@@ -1,8 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi.requests import Request
+from src.routers.transcriptor import router as websocket_router
 
 
 app = FastAPI()
+templates = Jinja2Templates(directory="src/views")
+
+app.include_router(websocket_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -13,9 +20,9 @@ app.add_middleware(
 )
 
 
-@app.get("/")
-async def root():
-    return {"status": "OnFire!", "docs": "/docs"}
+@app.get("/", response_class=HTMLResponse)
+async def get_audio(request: Request):
+    return templates.TemplateResponse("home.html", {"request": request})
 
 
 @app.get("/zig")

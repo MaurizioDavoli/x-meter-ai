@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Trascrizione Vocale in Tempo Reale</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const startButton = document.getElementById("startButton");
+            const transcriptionDisplay = document.getElementById("transcription");
+
+            let ws;
+            let mediaRecorder;
+
+            startButton.addEventListener("click", () => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    stopCapture();
+                } else {
+                    startCapture();
+                }
+            });
+
+            async function startCapture() {
+                ws = new WebSocket("ws://localhost/ws/transcriptor");
+                ws.onopen = async () => {
+                    console.log("Connessione WebSocket aperta");
+
+                    // Accedi al microfono
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const options = { mimeType: 'audio/webm' }; // Puoi specificare l'opzione mimeType qui se necessario
+                    mediaRecorder = new MediaRecorder(stream, options);
+            
+                    // Log del tipo MIME utilizzato
+                    console.log('Formato MIME corrente:', mediaRecorder.mimeType);
+
+                    // Evento attivato ogni volta che sono disponibili dati audio
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+                            ws.send(event.data);
+                        }
+                    };
+                    mediaRecorder.start(1000);
+                    startButton.textContent = "Ferma Microfono";
+                };
+
+                ws.onmessage = (event) => {
+                    const { transcription } = JSON.parse(event.data);
+                    transcriptionDisplay.textContent = `Trascrizione: ${transcription}`;
+                };
+
+                ws.onclose = () => {
+                    console.log("Connessione WebSocket chiusa");
+                    if (mediaRecorder) {
+                        mediaRecorder.stop();
+                    }
+                    startButton.textContent = "Avvia Microfono";
+                };
+
+                ws.onerror = (error) => {
+                    console.error("Errore WebSocket:", error);
+                };
+            }
+
+            function stopCapture() {
+                if (mediaRecorder) {
+                    mediaRecorder.stop();
+                    mediaRecorder = null;
+                }
+
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.close();
+                }
+
+                // Reset del pulsante
+                startButton.textContent = "Avvia Microfono";
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>Vocal transcription</h1>
+    <button id="startButton">Avvia Microfono</button>
+    <p id="transcription">Trascrizione: </p>
+</body>
+</html>

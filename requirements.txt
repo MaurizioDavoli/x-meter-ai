@@ -1,2 +1,10 @@
 fastapi==0.115.11
 uvicorn==0.34.0
+Jinja2==3.1.6
+websockets==15.0.1
+torch==2.6.0
+transformers==4.49.0
+accelerate==1.4.0
+pydub==0.25.1
+datasets==3.3.2
+ffmpeg-python==0.2.0
